@@ -1,0 +1,46 @@
+FROM centos:7
+
+MAINTAINER mmq
+ 
+
+RUN yum install -y   gcc gcc-c++  make \
+  && python -V \
+	&& rm -fv /etc/yum.repos.d/nodesource* \
+	&& curl --silent --location https://rpm.nodesource.com/setup_12.x | bash \
+	&& yum install -y nodejs \
+  && npm config set registry https://registry.npm.taobao.org \
+  && npm config set ELECTRON_MIRROR http://npm.taobao.org/mirrors/electron/ \
+	&& npm install -g @vue/cli@3 latest \
+	&& npm install node-gyp -g \
+	&& node-gyp -v
+ 
+ 
+#构建前台服务
+
+WORKDIR /hioshop-admin
+
+RUN chmod 777 /hioshop-admin
+
+COPY ./hioshop-admin .
+
+RUN npm install --no-fund thinkjs \
+   &&  npm run build:web
+
+# 构建服务API
+
+WORKDIR /hioshop-server
+
+RUN chmod 777 /hioshop-server
+
+# 拷贝前端项目到hioshop-server目录下
+COPY ./hioshop-server .
+
+
+RUN   npm install --no-fund thinkjs \
+    && npm install
+
+EXPOSE 8360
+
+# RUN npm run start
+# CMD ["npm", "run", "start"]
+CMD ["node", "production.js"]

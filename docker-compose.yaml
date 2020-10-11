@@ -1,0 +1,59 @@
+version: '3'
+services:
+  hioshop_mysql:
+    container_name: hioshop-mysql
+    image: mysql/mysql-server:5.7
+    environment:
+      MYSQL_DATABASE: hiolabsDB
+      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_ROOT_HOST: '%'
+    command:
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+      --max_allowed_packet=128M
+      --sql-mode="STRICT_TRANS_TABLES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO"
+    ports:
+      - "3307:3306"
+    networks:
+      - mall_net
+    volumes:
+      - "./mysql/initsql:/docker-entrypoint-initdb.d/"
+    restart: always
+
+  hioshop_web:
+    container_name: hioshop-web
+    restart: always
+    build:
+      context: ./
+      dockerfile: ./conf/DockerFile-NGINX
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "8089:8089"
+    networks:
+      - mall_net
+    depends_on:
+      - hioshop_server
+
+  hioshop_server:
+    container_name: hioshop-server
+    restart: always
+    build:
+      context: ./
+      dockerfile: ./conf/DockerFile-Server
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - ./hioshop-admin/dist:/hioshop-admin/dist
+    ports:
+      - "8360:8360"
+    networks:
+      - mall_net
+    depends_on:
+      - hioshop_mysql
+
+networks:
+  mall_net:
+    driver: bridge
